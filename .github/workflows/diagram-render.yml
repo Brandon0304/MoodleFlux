@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Necesario para git diff HEAD~1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,7 +41,13 @@ jobs:
         run: |
           # Obtener lista de archivos .mmd modificados
           if [ "${{ github.event_name }}" == "push" ]; then
-            changed_files=$(git diff --name-only HEAD~1 -- '*.mmd')
+            # Verificar que HEAD~1 existe (commits únicos o merge squash)
+            if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+              changed_files=$(git diff --name-only HEAD~1 -- '*.mmd')
+            else
+              echo "⚠️ HEAD~1 no disponible — revisando todos los .mmd nuevos"
+              changed_files=$(git diff --name-only --diff-filter=A HEAD~1 -- '*.mmd' 2>/dev/null || git diff --name-only --root -- '*.mmd' 2>/dev/null || find docs/diagrams -name '*.mmd' -not -path './.git/*')
+            fi
           else
             changed_files=$(git diff --name-only origin/main -- '*.mmd')
           fi
