@@ -1,0 +1,133 @@
+# =============================================================================
+# Workflow: Pruebas de Carga
+# Propósito: Ejecutar pruebas de carga con k6 sobre la instancia de Moodle
+#            Solo ejecución manual o programada (no en push)
+# =============================================================================
+
+name: Pruebas de Carga
+
+on:
+  schedule:
+    # Ejecutar cada sábado a las 4:00 AM (entorno de pruebas)
+    - cron: '0 4 * * 6'
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'URL del sitio Moodle a probar'
+        required: true
+        default: 'https://localhost'
+        type: string
+      virtual_users:
+        description: 'Número de usuarios virtuales concurrentes'
+        required: true
+        default: '50'
+        type: choice
+        options:
+          - '10'
+          - '25'
+          - '50'
+          - '100'
+          - '200'
+      duration:
+        description: 'Duración de la prueba (minutos)'
+        required: true
+        default: '2'
+        type: choice
+        options:
+          - '1'
+          - '2'
+          - '5'
+          - '10'
+
+jobs:
+  k6-load-test:
+    name: Ejecutar k6
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Crear script de prueba dinámico
+        run: |
+          cat > k6-test.js << 'K6EOF'
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+const TARGET = __ENV.TARGET_URL || 'https://localhost';
+
+export const options = {
+  stages: [
+    { duration: '30s', target: __ENV.VUS || 50 },
+    { duration: '2m', target: __ENV.VUS || 50 },
+    { duration: '30s', target: 0 },
+  ],
+  thresholds: {
+    http_req_duration: ['p(95)<500'],
+    http_req_failed: ['rate<0.01'],
+  },
+};
+
+export default function () {
+  const responses = http.batch([
+    ['GET', `${TARGET}/`, null, { tags: { name: 'homepage' } }],
+    ['GET', `${TARGET}/login/index.php`, null, { tags: { name: 'login' } }],
+  ]);
+
+  check(responses[0], {
+    'homepage status 200': (r) => r.status === 200,
+  });
+  check(responses[1], {
+    'login page status 200': (r) => r.status === 200,
+  });
+
+  sleep(Math.random() * 3 + 1);
+}
+K6EOF
+          echo "✅ Script k6 creado"
+
+      - name: Ejecutar k6
+        run: |
+          k6 run \
+            --vus ${{ github.event.inputs.virtual_users || '50' }} \
+            --duration ${{ github.event.inputs.duration || '2' }}m \
+            --summary-export=k6-results.json \
+            -e TARGET_URL=${{ github.event.inputs.target_url || 'https://localhost' }} \
+            -e VUS=${{ github.event.inputs.virtual_users || '50' }} \
+            k6-test.js
+        continue-on-error: true  # No fallar el workflow si hay errores de carga
+
+      - name: Publicar resultados como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results
+          path: |
+            k6-results.json
+            k6-test.js
+
+      - name: Generar resumen
+        run: |
+          echo "## 📊 Resultados de Prueba de Carga" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parámetro | Valor |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **URL** | ${{ github.event.inputs.target_url || 'https://localhost' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Usuarios** | ${{ github.event.inputs.virtual_users || '50' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Duración** | ${{ github.event.inputs.duration || '2' }} min |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Fecha** | $(date '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Resultados detallados en el artifact k6-results" >> $GITHUB_STEP_SUMMARY
+          if [ -f k6-results.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Métricas clave:" >> $GITHUB_STEP_SUMMARY
+            cat k6-results.json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+metrics = data.get('metrics', {})
+for key in ['http_req_duration', 'http_req_failed', 'http_reqs']:
+    if key in metrics:
+        print(f'- **{key}**: {json.dumps(metrics[key].get(\"avg\", {}))}' )
+        " 2>/dev/null || echo "No se pudieron extraer métricas"
+          fi

@@ -1,0 +1,138 @@
+# =============================================================================
+# Workflow: Validación de Documentación
+# Propósito: Garantizar que la documentación arquitectónica cumple los
+#            estándares definidos en .agents/rules/documentation.mdc
+# =============================================================================
+
+name: Validación de Documentación
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docs/**'
+      - '.agents/rules/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.agents/rules/**'
+
+jobs:
+  validate-adrs:
+    name: Validar ADRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar nomenclatura de ADRs
+        run: |
+          echo "=== Verificando nomenclatura ADR ==="
+          for file in docs/adr/*.md; do
+            basename=$(basename "$file")
+            # Formato esperado: ADR-NNN-titulo-en-espanol.md
+            if [[ ! "$basename" =~ ^ADR-[0-9]{3}-[a-z0-9-]+\.md$ ]]; then
+              echo "❌ Formato incorrecto: $basename"
+              echo "   Esperado: ADR-NNN-titulo-en-espanol.md (ej: ADR-001-stack-tecnologico.md)"
+              exit 1
+            fi
+            echo "✅ $basename"
+          done
+          echo "=== Todos los ADRs pasaron la validación de nomenclatura ==="
+
+      - name: Verificar secuencia numérica de ADRs
+        run: |
+          echo "=== Verificando secuencia numérica ==="
+          expected=1
+          for file in $(ls docs/adr/*.md | sort); do
+            basename=$(basename "$file")
+            num=$(echo "$basename" | grep -oP '\d{3}' | sed 's/^0*//')
+            if [ "$num" -ne "$expected" ]; then
+              echo "❌ Salto en numeración: se esperaba $expected, se encontró $num en $basename"
+              exit 1
+            fi
+            echo "✅ ADR-$num → $basename"
+            expected=$((expected + 1))
+          done
+          echo "=== Secuencia numérica correcta ==="
+
+      - name: Verificar formato de ADRs (secciones obligatorias)
+        run: |
+          echo "=== Verificando secciones obligatorias ==="
+          required_sections=("## Estado" "## Contexto" "## Opciones consideradas" "## Decisión" "## Consecuencias" "## Referencias")
+          for file in docs/adr/*.md; do
+            basename=$(basename "$file")
+            for section in "${required_sections[@]}"; do
+              if ! grep -q "$section" "$file"; then
+                echo "❌ $basename: falta sección '$section'"
+                exit 1
+              fi
+            done
+            echo "✅ $basename: todas las secciones presentes"
+          done
+          echo "=== Todos los ADRs tienen el formato correcto ==="
+
+  lint-markdown:
+    name: Lint Markdown
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint Markdown files
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: |
+            docs/**/*.md
+            .agents/rules/*.mdc
+          config: |
+            {
+              "MD013": false,
+              "MD033": false,
+              "MD041": false
+            }
+
+  check-links:
+    name: Verificar enlaces internos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que las referencias a ADRs existen
+        run: |
+          echo "=== Verificando referencias cruzadas entre ADRs ==="
+          for doc in docs/adr/*.md docs/arquitectura-general.md; do
+            while IFS= read -r line; do
+              if [[ $line =~ \[ADR-([0-9]{3})\] ]]; then
+                adr_num="${BASH_REMATCH[1]}"
+                adr_file="docs/adr/ADR-${adr_num}-*.md"
+                if ! ls $adr_file 2>/dev/null; then
+                  echo "❌ $doc referencia ADR-$adr_num pero no existe"
+                  echo "   Buscado: $adr_file"
+                  exit 1
+                fi
+              fi
+            done < "$doc"
+          done
+          echo "✅ Todas las referencias a ADRs son válidas"
+
+      - name: Verificar referencias a diagramas
+        run: |
+          echo "=== Verificando referencias a diagramas SVG ==="
+          for doc in docs/arquitectura-general.md docs/README.md; do
+            if [ -f "$doc" ]; then
+              while IFS= read -r line; do
+                if [[ $line =~ \[.*\]\(([^)]+\.svg)\) ]]; then
+                  svg_path="${BASH_REMATCH[1]}"
+                  full_path="docs/$svg_path"
+                  if [ ! -f "$full_path" ]; then
+                    echo "❌ $doc referencia $svg_path pero no existe"
+                    exit 1
+                  fi
+                fi
+              done < "$doc"
+            fi
+          done
+          echo "✅ Todas las referencias a diagramas son válidas"
