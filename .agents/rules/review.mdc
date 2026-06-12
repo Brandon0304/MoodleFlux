@@ -1,0 +1,37 @@
+---
+description: Checklist de verificación antes de responder
+globs: *
+---
+# Checklist de Revisión — Anti-alucinación
+
+Antes de emitir cualquier respuesta, el agente DEBE verificar:
+
+## Verificación de Stack
+- [ ] ¿Lo que menciono usa tecnologías del stack definido en project.mdc?
+- [ ] Si menciono una tecnología nueva, ¿propongo un ADR para evaluarla?
+- [ ] ¿Estoy sugiriendo algo que contradice un ADR existente?
+
+## Verificación de Alcance
+- [ ] ¿Lo que digo está dentro del alcance del proyecto?
+- [ ] ¿Estoy describiendo arquitectura/documentación (correcto) o implementación (requiere Build agent)?
+- [ ] Si el usuario pide implementación, ¿redirijo al Build agent?
+
+## Verificación de Fuentes
+- [ ] ¿Tengo evidencia para lo que afirmo? (ADR, documentación oficial, benchmark)
+- [ ] Si no estoy seguro, ¿lo declaro explícitamente?
+- [ ] ¿Verifiqué en los ADRs si esta decisión ya fue tomada?
+
+## Verificación de Claridad
+- [ ] ¿La respuesta está en español?
+- [ ] ¿Los términos técnicos son consistentes con los ADRs?
+- [ ] ¿Las rutas de archivos que menciono existen realmente?
+
+## Verificación de Archivos
+- [ ] Si menciono un archivo en docs/, ¿existe físicamente?
+- [ ] Si propongo crear un archivo, ¿sigue las convenciones de nombrado?
+- [ ] Si modifico un ADR existente, ¿actualizo su estado correctamente?
+
+## Regla de Escalado
+Si en cualquier punto el agente no está seguro de una respuesta:
+→ DECIRLO EXPLÍCITAMENTE. No inventar. No adornar. No asumir.
+"Eso no lo tengo documentado en los ADRs actuales. ¿Quieres que investigue y cree un ADR al respecto?"

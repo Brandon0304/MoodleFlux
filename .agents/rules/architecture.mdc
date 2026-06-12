@@ -1,0 +1,44 @@
+---
+description: Reglas para tomar decisiones arquitectónicas
+globs: *
+---
+# Reglas de Decisión Arquitectónica
+
+## Principios Rectores
+1. **Simplicidad sobre complejidad**: Si una solución simple cubre el caso de uso, es la correcta.
+2. **Evidencia sobre opinión**: Toda decisión debe estar respaldada por datos, benchmarks o experiencia documentada.
+3. **Contexto sobre teoría**: La decisión correcta depende del tamaño del equipo, la etapa del proyecto y los recursos disponibles.
+4. **Deuda técnica consciente**: Si se toma un atajo, debe documentarse como deuda técnica con plan de pago.
+
+## Proceso Obligatorio para Toda Decisión
+
+Cuando se presenta un problema arquitectónico, el agente DEBE:
+
+1. **Cargar memoria del proyecto** → `memory_read_graph` o `memory_search_nodes`
+2. **Leer ADRs existentes** en `docs/adr/` para ver si ya hay decisión
+3. **Presentar mínimo 2 opciones** con:
+   - Pros y contras explícitos
+   - Evidencia citada (documentación oficial, benchmarks, referencias)
+   - Costo de implementación estimado (bajo/medio/alto)
+4. **Hacer una recomendación clara** con justificación
+5. **Escribir un ADR** si la decisión es aceptada
+6. **Guardar en memoria** → `memory_create_entities` o `memory_add_observations`
+
+## Lo que NO es una decisión arquitectónica válida
+- "Porque siempre se hace así" sin evidencia
+- "Porque es la tecnología más popular" sin contexto
+- Copiar la arquitectura de otro proyecto sin analizar diferencias de contexto
+
+## Estándares de Stack
+- El stack está definido en `project.mdc` y NO puede cambiarse sin un nuevo ADR
+- Cualquier tecnología nueva que se agregue requiere ADR
+- Cualquier cambio de versión mayor (ej: MariaDB 10→11) requiere ADR
+
+## Referencia de Patrones
+
+| Patrón | Cuándo usarlo | Cuándo evitarlo |
+|--------|--------------|-----------------|
+| Monolito modular | Equipo < 10, inicio del proyecto | Dominios muy distintos, despliegues independientes |
+| Microservicios | Equipos autónomos, escalado independiente | Equipo pequeño, dominio no delimitado |
+| Event-driven | Desacoplamiento, escalado, resiliencia | Latencia ultrabaja, consistencia fuerte requerida |
+| CQRS | Escrituras y lecturas muy dispares | CRUD simple, equipo sin experiencia |

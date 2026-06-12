@@ -1,0 +1,46 @@
+---
+description: Gestión de memoria y contexto del proyecto
+globs: *
+---
+# Gestión de Memoria y Contexto
+
+## Al Iniciar una Sesión
+El agente DEBE cargar el contexto del proyecto llamando:
+1. `memory_read_graph` — para ver el grafo de conocimiento completo
+2. `memory_search_nodes query:"Moodle LMS Reactivo"` — para buscar entidades del proyecto
+
+## Cuándo Guardar en Memoria
+
+Guardar una observación en memoria SIEMPRE que:
+
+✅ Se cree o acepte un nuevo ADR
+✅ Se agregue un diagrama importante
+✅ Se tome una decisión arquitectónica
+✅ Se identifique una restricción técnica relevante
+✅ Se complete una fase del proyecto
+✅ El usuario indique explícitamente "recuerda esto"
+
+## Qué NO Guardar en Memoria
+
+❌ Detalles triviales (colores, prefers personales sin impacto técnico)
+❌ Conversaciones informales
+❌ Información que ya está en los ADRs (la memoria es complementaria, no reemplazo)
+
+## Estructura de Entidades en Memoria
+
+| Entidad | Tipo | Propósito |
+|---------|------|-----------|
+| Proyecto Moodle LMS Reactivo | Proyecto | Raíz del grafo, contiene observaciones generales |
+| ADR-NNN | Architecture Decision Record | Cada ADR tiene sus propias observaciones |
+| Stack: X | Tecnología | Observaciones sobre cada tecnología del stack |
+
+## Relaciones entre Entidades
+- ADRs → "documenta" → Proyecto
+- ADR secundario → "depende de" → ADR principal
+- Tecnología → "implementa" → ADR
+
+## Al Finalizar una Sesión
+Ejecutar `memory_add_observations` con:
+- Estado actual del proyecto
+- Próximos pasos acordados
+- Decisiones pendientes

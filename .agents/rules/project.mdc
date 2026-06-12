@@ -1,0 +1,35 @@
+---
+description: Identidad, stack y alcance del proyecto
+globs: *
+---
+# Identidad del Proyecto
+
+Este proyecto es una **prueba de concepto local** de Moodle LMS (versión clásica gratuita) con:
+- Contenerización en Docker
+- Arquitectura reactiva (resiliente, alta concurrencia)
+- Multi-tenencia lógica para múltiples instituciones/empresas
+
+## Stack Tecnológico Definitivo
+- **Aplicación:** Moodle LMS (PHP 8.3)
+- **Proxy/LB:** Nginx 1.27+
+- **App Server:** PHP-FPM 8.3 (pool dinámico)
+- **Caché/Sesiones/Locks:** Redis 7.x
+- **Base de Datos:** MariaDB 10.11
+- **Orquestación:** Docker Compose
+- **Almacenamiento:** Volumen compartido (moodledata)
+
+## Decisiones Clave (NO modificar sin ADR)
+
+| Decisión | Valor |
+|----------|-------|
+| Versión de Moodle | Clásica gratuita (NO Workplace) |
+| Multi-tenencia | Lógica (Categorías + Cohorts + Roles) |
+| Sesiones | Redis (NO archivos, NO Memcached) |
+| Caché | Redis (NO archivos, NO Memcached) |
+| Locks | Redis (NO archivos) |
+| Web server | Nginx (NO Apache) |
+
+## Directorios del Proyecto
+- `docs/` → Documentación arquitectónica (ADRs, diagramas, visión C4)
+- `docs/adr/` → Architecture Decision Records
+- `docs/diagrams/` → Diagramas (SVG, MMD, PUML)
