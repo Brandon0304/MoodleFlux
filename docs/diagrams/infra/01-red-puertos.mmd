@@ -1,0 +1,63 @@
+%% Diagrama de Red y Puertos Docker
+%% Muestra conectividad, redes y mapeo de puertos
+
+graph TB
+    subgraph HOST["MÁQUINA ANFITRIONA (localhost)"]
+        style HOST fill:#f0f0f0,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+
+        subgraph RED_FRONTEND["Red: frontend_net (bridge)"]
+            style RED_FRONTEND fill:#e8f4fd,stroke:#3498db
+
+            NGINX["⚖️ Nginx\nnginx:1.27-alpine\nPorts: 443:443 / 80:80\nVolumen: ./nginx/conf.d:/etc/nginx/conf.d"]
+        end
+
+        subgraph RED_BACKEND["Red: backend_net (bridge, interna)"]
+            style RED_BACKEND fill:#fef9e7,stroke:#f39c12
+
+            PHP["🐘 PHP-FPM\nphp:8.3-fpm-alpine\nPorts: 9000\nVolumen: moodle-code:/var/www/html\nVolumen: moodledata:/var/www/moodledata"]
+
+            REDIS["⚡ Redis\nredis:7-alpine\nPort: 6379\nVolumen: redis-data:/data"]
+
+            MARIA["🗄️ MariaDB\nmariadb:10.11\nPort: 3306\nVolumen: mariadb-data:/var/lib/mysql"]
+
+            MAIL["📧 Mailpit\naxllent/mailpit\nPorts: 1025, 8025"]
+        end
+    end
+
+    subgraph VOLUMENES["Volúmenes Persistentes"]
+        style VOLUMENES fill:#e8f8f5,stroke:#27ae60
+        V_MOODLE["moodle-code\n(Código fuente Moodle)"]
+        V_MOODLEDATA["moodledata\n(Archivos subidos)"]
+        V_REDIS["redis-data\n(Persistencia Redis)"]
+        V_MARIA["mariadb-data\n(Datos de base de datos)"]
+    end
+
+    PHP --> V_MOODLE
+    PHP --> V_MOODLEDATA
+    REDIS --> V_REDIS
+    MARIA --> V_MARIA
+
+    subgraph LEYENDA_PUERTOS["Leyenda de Puertos"]
+        style LEYENDA_PUERTOS fill:#fafafa,stroke:#ccc
+        L1["📌 host:container"]
+        L2["🔓 Expuesto al host"]
+        L3["🔒 Solo red interna"]
+    end
+
+    NGINX -. "🔓 443:443" .-> L2
+    NGINX -. "🔓 80:80" .-> L2
+    MARIA -. "🔒 3306" .-> L3
+    REDIS -. "🔒 6379" .-> L3
+    PHP -. "🔒 9000" .-> L3
+
+    %% Conexiones de red
+    NGINX ---|RED_FRONTEND| PHP
+    PHP ---|RED_BACKEND| REDIS
+    PHP ---|RED_BACKEND| MARIA
+    PHP ---|RED_BACKEND| MAIL
+
+    %% Dependencias
+    PHP -.-> REDIS
+    PHP -.-> MARIA
+    PHP -.-> MAIL
+    NGINX -.-> PHP

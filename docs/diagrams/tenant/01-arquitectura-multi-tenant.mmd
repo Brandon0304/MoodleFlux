@@ -1,0 +1,54 @@
+%% Diagrama de Arquitectura Multi-Tenant (Lógica)
+%% Muestra cómo se aíslan los tenants dentro de una misma instancia Moodle
+
+graph TB
+    subgraph MOODLE["Instancia Única Moodle LMS"]
+        style MOODLE fill:#f5f0ff,stroke:#6c5ce7,stroke-width:2px
+        
+        LOGIN["🔐 Login Unificado<br/>todos los usuarios"]
+
+        subgraph T1["🏢 Tenant A: Universidad Nacional"]
+            style T1 fill:#e8f8f5,stroke:#1abc9c
+            CAT1["📂 Categoría Raíz<br/>/Universidad Nacional/"]
+            C11["📖 Curso: Matemáticas"]
+            C12["📖 Curso: Física"]
+            COH1["👥 Cohorte: cohorte_unacional"]
+            ADM1["👤 Admin: admin@unacional.edu"]
+            THM1["🎨 Theme: boost_uni"]
+        end
+
+        subgraph T2["🏢 Tenant B: Empresa Capacitaciones"]
+            style T2 fill:#fef9e7,stroke:#f39c12
+            CAT2["📂 Categoría Raíz<br/>/Empresa Capacitaciones/"]
+            C21["📖 Curso: Compliance"]
+            C22["📖 Curso: Safety Training"]
+            COH2["👥 Cohorte: cohorte_empx"]
+            ADM2["👤 Admin: admin@empx.com"]
+            THM2["🎨 Theme: boost_corp"]
+        end
+
+        subgraph T3["🏢 Tenant C: Colegio Secundario"]
+            style T3 fill:#fdedec,stroke:#e74c3c
+            CAT3["📂 Categoría Raíz<br/>/Colegio Secundario/"]
+            C31["📖 Curso: Historia"]
+            C32["📖 Curso: Lengua"]
+            COH3["👥 Cohorte: cohorte_colegioy"]
+            ADM3["👤 Admin: admin@colegioy.edu"]
+            THM3["🎨 Theme: boost_school"]
+        end
+    end
+
+    subgraph GLOBAL["Admin Global del Sistema"]
+        AG["🔧 Admin Global<br/>(crea tenants, asigna<br/>categorías y roles)"]
+    end
+
+    AG --> T1
+    AG --> T2
+    AG --> T3
+    LOGIN --> T1
+    LOGIN --> T2
+    LOGIN --> T3
+
+    %% Aislamiento visual
+    T1 -.-x T2
+    T2 -.-x T3

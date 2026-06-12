@@ -1,0 +1,33 @@
+%% Diagrama de Contexto C4 - Nivel 1
+%% Sistema: Moodle LMS Reactivo Multi-Tenant
+
+graph TB
+    subgraph " "
+        direction TB
+        style E fill:#f0f0f0,stroke:#333,stroke-width:2px
+        
+        E["
+            <b>SISTEMA MOODLE LMS</b><br/>
+            Sistema de Gestión de Aprendizaje<br/>
+            Reactivo · Multi-Tenant · Escalable
+        "] 
+
+        subgraph Actores[" "]
+            A1(("👤 Estudiante<br/>Consume cursos y<br/>realiza actividades"))
+            A2(("👨‍🏫 Profesor<br/>Crea y gestiona<br/>contenido educativo"))
+            A3(("🔧 Admin Global<br/>Super administrador<br/>del sistema"))
+            A4(("🏢 Tenant Admin<br/>Administrador delegado<br/>de una institución"))
+        end
+
+        subgraph Servicios[" "]
+            S1["📧 Mailpit<br/>(SMTP de prueba)"]
+            S2["🔐 LDAP<br/>(Autenticación<br/>externa - opcional)"]
+        end
+    end
+
+    A1 -- "HTTPS" --> E
+    A2 -- "HTTPS" --> E
+    A3 -- "HTTPS" --> E
+    A4 -- "HTTPS" --> E
+    E -- "Envía correos" --> S1
+    E -- "Autentica contra" --> S2

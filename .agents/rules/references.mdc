@@ -1,0 +1,61 @@
+---
+description: Mapa rápido de referencias del proyecto
+globs: *
+---
+# Referencias Rápidas del Proyecto
+
+## Archivos Clave
+
+| Documento | Ruta | Propósito |
+|-----------|------|-----------|
+| Stack y alcance | `docs/adr/ADR-001-stack-tecnologico-y-contenerizacion.md` | Stack tecnológico definitivo |
+| Arquitectura reactiva | `docs/adr/ADR-002-arquitectura-reactiva-concurrencia-resiliencia.md` | Patrones de concurrencia y resiliencia |
+| Multi-tenencia | `docs/adr/ADR-003-estrategia-multi-tenencia.md` | Estrategia de aislamiento lógico |
+| Caché y sesiones | `docs/adr/ADR-004-cache-sesiones-almacenamiento.md` | Redis, moodledata, config.php |
+| Base de datos | `docs/adr/ADR-005-base-datos-alta-disponibilidad.md` | MariaDB, rendimiento, HA |
+| Visión general | `docs/arquitectura-general.md` | C4 Context y Contenedores |
+| Mapa de diagramas | `docs/diagrams/README.md` | Todos los diagramas indexados |
+| Galería de diagramas | `docs/diagrams/index.html` | Visualización en navegador |
+
+## Stack Resumido (NO innovar fuera de esto)
+
+```
+Moodle LMS (PHP 8.3) + Nginx 1.27 + PHP-FPM 8.3 + Redis 7 + MariaDB 10.11 + Docker Compose
+```
+
+## Diagramas Disponibles (8)
+
+| # | Diagrama | Ruta SVG |
+|---|----------|----------|
+| 1 | Contexto C4 | `docs/diagrams/c4/01-contexto.svg` |
+| 2 | Contenedores C4 | `docs/diagrams/c4/02-contenedores.svg` |
+| 3 | Componentes C4 N3 | `docs/diagrams/c4/03-componentes.svg` |
+| 4 | Red y Puertos | `docs/diagrams/infra/01-red-puertos.svg` |
+| 5 | Resiliencia | `docs/diagrams/infra/02-resiliencia-estados.svg` |
+| 6 | Multi-Tenant | `docs/diagrams/tenant/01-arquitectura-multi-tenant.svg` |
+| 7 | Aprovisionamiento | `docs/diagrams/tenant/02-aprovisionamiento-tenant.svg` |
+| 8 | Flujo de Solicitud | `docs/diagrams/flujos/01-flujo-solicitud.svg` |
+
+## ADRs Creados (5)
+
+| ADR | Título | Estado |
+|-----|--------|--------|
+| ADR-001 | Stack Tecnológico y Contenerización | Aceptado |
+| ADR-002 | Arquitectura Reactiva — Concurrencia y Resiliencia | Aceptado |
+| ADR-003 | Estrategia de Multi-Tenencia | Aceptado |
+| ADR-004 | Caché, Sesiones y Almacenamiento Distribuido | Aceptado |
+| ADR-005 | Base de Datos y Alta Disponibilidad | Aceptado |
+
+## Comandos Útiles para el Agente
+
+```bash
+# Renderizar diagrama Mermaid a SVG
+export PUPPETEER_EXECUTABLE_PATH=/home/brandon/.cache/puppeteer/chrome/linux-149.0.7827.22/chrome-linux64/chrome
+npx @mermaid-js/mermaid-cli -i archivo.mmd -o archivo.svg
+
+# Buscar en documentación existente
+grep -r "patron" docs/adr/
+
+# Ver estructura completa
+find docs/ -type f | sort
+```

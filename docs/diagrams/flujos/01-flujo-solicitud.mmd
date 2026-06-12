@@ -1,0 +1,40 @@
+%% Diagrama de Secuencia - Flujo de Solicitud Bajo Alta Carga
+%% Muestra cómo se atiende una petición concurrente
+
+sequenceDiagram
+    participant C as 🌐 Cliente (Estudiante)
+    participant N as ⚖️ Nginx (LB)
+    participant P as 🐘 PHP-FPM (Worker Pool)
+    participant R as ⚡ Redis
+    participant M as 🗄️ MariaDB
+    participant F as 📁 moodledata
+
+    Note over C,F: 1. El estudiante accede al curso
+    C->>N: GET /course/view.php?id=42
+    N->>N: Selecciona worker disponible (round-robin)
+    N->>P: fastcgi (worker-3)
+    
+    Note over P: 2. Verificar sesión
+    P->>R: GET session_id (Redis DB0)
+    R-->>P: session_data (usuario autenticado)
+
+    Note over P: 3. Obtener datos del curso
+    P->>R: GET cache:course:42 (Redis DB1)
+    alt Cache MISS
+        R-->>P: null
+        P->>M: SELECT * FROM mdl_course WHERE id=42
+        M-->>P: course_data
+        P->>R: SET cache:course:42 (TTL 3600s)
+    else Cache HIT
+        R-->>P: course_data (from cache)
+    end
+
+    Note over P: 4. Obtener archivo del curso
+    P->>F: READ filedir/ab/cd/arquivo.pdf
+    F-->>P: file_content
+
+    Note over P: 5. Renderizar HTML
+    P-->>N: HTML response
+    N-->>C: 200 OK (página del curso)
+
+    Note over C,F: Latencia total esperada: ~150-400ms bajo carga normal
