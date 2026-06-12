@@ -1,0 +1,27 @@
+# MoodleFlux - Git Ignore
+# Documentación y arquitectura - sin código compilado ni dependencias
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Logs
+*.log
+
+# Dependencias (si en futuro se agregan)
+node_modules/
+vendor/
+
+# Secretos (ADR-006)
+.env
+.env.local
+*.key
+*.pem
