@@ -1,34 +1,6 @@
 name: Pruebas de Carga
 
-on:
-  workflow_dispatch:
-    inputs:
-      target_url:
-        description: 'URL del sitio Moodle a probar'
-        required: true
-        default: 'https://localhost'
-        type: string
-      virtual_users:
-        description: 'Numero de usuarios virtuales concurrentes'
-        required: true
-        default: '50'
-        type: choice
-        options:
-          - '10'
-          - '25'
-          - '50'
-          - '100'
-          - '200'
-      duration:
-        description: 'Duracion de la prueba (minutos)'
-        required: true
-        default: '2'
-        type: choice
-        options:
-          - '1'
-          - '2'
-          - '5'
-          - '10'
+on: workflow_dispatch
 
 jobs:
   k6-load-test:
@@ -41,18 +13,19 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
-      - name: Crear script de prueba dinamico
+      - name: Crear script de prueba
         run: |
           cat > k6-test.js << 'K6EOF'
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
 const TARGET = __ENV.TARGET_URL || 'https://localhost';
+const VUS = __ENV.VUS || 50;
 
 export const options = {
   stages: [
-    { duration: '30s', target: __ENV.VUS || 50 },
-    { duration: '2m', target: __ENV.VUS || 50 },
+    { duration: '30s', target: VUS },
+    { duration: '2m', target: VUS },
     { duration: '30s', target: 0 },
   ],
   thresholds: {
@@ -81,29 +54,18 @@ K6EOF
       - name: Ejecutar k6
         run: |
           k6 run \
-            --vus ${{ github.event.inputs.virtual_users || '50' }} \
-            --duration ${{ github.event.inputs.duration || '2' }}m \
+            --vus 50 \
+            --duration 2m \
             --summary-export=k6-results.json \
-            -e TARGET_URL=${{ github.event.inputs.target_url || 'https://localhost' }} \
-            -e VUS=${{ github.event.inputs.virtual_users || '50' }} \
+            -e TARGET_URL=https://localhost \
+            -e VUS=50 \
             k6-test.js
         continue-on-error: true
 
-      - name: Publicar resultados como artifact
+      - name: Publicar resultados
         uses: actions/upload-artifact@v4
         with:
           name: k6-results
           path: |
             k6-results.json
             k6-test.js
-
-      - name: Generar resumen
-        run: |
-          echo '## Resultados de Prueba de Carga' >> $GITHUB_STEP_SUMMARY
-          echo '' >> $GITHUB_STEP_SUMMARY
-          echo '| Parametro | Valor |' >> $GITHUB_STEP_SUMMARY
-          echo '|-----------|-------|' >> $GITHUB_STEP_SUMMARY
-          echo "| **URL** | ${{ github.event.inputs.target_url || 'https://localhost' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Usuarios** | ${{ github.event.inputs.virtual_users || '50' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Duracion** | ${{ github.event.inputs.duration || '2' }} min |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Fecha** | $(date '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
