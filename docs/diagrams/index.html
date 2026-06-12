@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Diagramas - Moodle LMS Reactivo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; color: #333; padding: 40px; }
+        h1 { font-size: 28px; margin-bottom: 8px; color: #1a1a2e; }
+        .subtitle { color: #666; margin-bottom: 30px; font-size: 16px; }
+        .nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 30px; }
+        .nav a { text-decoration: none; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: 500; background: white; color: #555; border: 1px solid #ddd; }
+        .nav a:hover { background: #e8f4fd; border-color: #2980b9; color: #2980b9; }
+        .gallery { display: flex; flex-direction: column; gap: 40px; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 30px; }
+        .card h2 { font-size: 20px; color: #2c3e50; margin-bottom: 4px; }
+        .card .path { font-size: 12px; color: #999; font-family: monospace; margin-bottom: 4px; }
+        .card .badge { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 12px; margin-left: 8px; font-weight: 600; }
+        .badge-c4 { background: #e8f4fd; color: #2980b9; }
+        .badge-infra { background: #f5f0ff; color: #6c5ce7; }
+        .badge-tenant { background: #e8f8f5; color: #1abc9c; }
+        .badge-flow { background: #fef9e7; color: #f39c12; }
+        .card .desc { color: #666; font-size: 14px; margin-bottom: 6px; }
+        .card .formats { font-size: 12px; color: #aaa; margin-bottom: 16px; }
+        .card .formats code { background: #f0f0f0; padding: 1px 6px; border-radius: 4px; }
+        .card img { max-width: 100%; height: auto; border: 1px solid #eee; border-radius: 8px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <h1>📐 Diagramas Arquitectónicos</h1>
+    <p class="subtitle">Moodle LMS — Arquitectura Reactiva Multi-Tenant · 8 diagramas en SVG, MMD y PUML</p>
+
+    <div class="nav">
+        <a href="#c4">C4 Model</a>
+        <a href="#infra">Infraestructura</a>
+        <a href="#tenant">Multi-Tenant</a>
+        <a href="#flujos">Flujos</a>
+    </div>
+
+    <div class="gallery">
+
+        <!-- SECCIÓN C4 -->
+        <h2 id="c4" style="color:#2980b9; border-bottom: 2px solid #2980b9; padding-bottom: 8px;">📦 C4 Model</h2>
+
+        <div class="card">
+            <h2>Nivel 1: Diagrama de Contexto <span class="badge badge-c4">C4</span></h2>
+            <div class="path">c4/01-contexto.svg · c4/01-contexto.mmd · c4/01-contexto.puml</div>
+            <p class="desc">Actores del sistema (Estudiante, Profesor, Admin Global, Tenant Admin) e interacciones con Moodle LMS y servicios externos (Mailpit, LDAP).</p>
+            <img src="c4/01-contexto.svg" alt="Diagrama de Contexto C4">
+        </div>
+
+        <div class="card">
+            <h2>Nivel 2: Diagrama de Contenedores <span class="badge badge-c4">C4</span></h2>
+            <div class="path">c4/02-contenedores.svg · c4/02-contenedores.mmd · c4/02-contenedores.puml</div>
+            <p class="desc">Arquitectura Docker: Nginx → PHP-FPM (workers escalables) → Redis → MariaDB → moodledata. Base de todo el despliegue.</p>
+            <img src="c4/02-contenedores.svg" alt="Diagrama de Contenedores C4">
+        </div>
+
+        <div class="card">
+            <h2>Nivel 3: Componentes Internos <span class="badge badge-c4">C4</span></h2>
+            <div class="path">c4/03-componentes.svg · c4/03-componentes.mmd</div>
+            <p class="desc">Módulos PHP de Moodle y su conexión al stack reactivo. Incluye las configuraciones clave del config.php (session_handler, cache_store, lock_factory).</p>
+            <img src="c4/03-componentes.svg" alt="Diagrama de Componentes C4 N3">
+        </div>
+
+        <!-- SECCIÓN INFRAESTRUCTURA -->
+        <h2 id="infra" style="color:#6c5ce7; border-bottom: 2px solid #6c5ce7; padding-bottom: 8px;">⚙️ Infraestructura</h2>
+
+        <div class="card">
+            <h2>Red Docker y Puertos <span class="badge badge-infra">INFRA</span></h2>
+            <div class="path">infra/01-red-puertos.svg · infra/01-red-puertos.mmd</div>
+            <p class="desc">Topología de red: frontend_net y backend_net, mapeo de puertos host→contenedor, volúmenes persistentes y dependencias entre servicios.</p>
+            <img src="infra/01-red-puertos.svg" alt="Diagrama de Red Docker">
+        </div>
+
+        <div class="card">
+            <h2>Máquina de Estados: Resiliencia <span class="badge badge-infra">REACTIVO</span></h2>
+            <div class="path">infra/02-resiliencia-estados.svg · infra/02-resiliencia-estados.mmd</div>
+            <p class="desc">Comportamiento ante fallos: Redis caído → modo degradado + health checks; MariaDB caído → HTTP 503 + restart; Workers saturados → Nginx encola + HTTP 502; Disco lleno → modo solo lectura.</p>
+            <img src="infra/02-resiliencia-estados.svg" alt="Diagrama de Resiliencia">
+        </div>
+
+        <!-- SECCIÓN TENANT -->
+        <h2 id="tenant" style="color:#1abc9c; border-bottom: 2px solid #1abc9c; padding-bottom: 8px;">🏢 Multi-Tenencia</h2>
+
+        <div class="card">
+            <h2>Arquitectura Multi-Tenant <span class="badge badge-tenant">TENANT</span></h2>
+            <div class="path">tenant/01-arquitectura-multi-tenant.svg · tenant/01-arquitectura-multi-tenant.mmd · tenant/01-arquitectura-multi-tenant.puml</div>
+            <p class="desc">Aislamiento lógico de 3 instituciones (Universidad, Empresa, Colegio) dentro de una misma instancia Moodle: Categorías + Cohorts + Roles + Themes.</p>
+            <img src="tenant/01-arquitectura-multi-tenant.svg" alt="Arquitectura Multi-Tenant">
+        </div>
+
+        <div class="card">
+            <h2>Aprovisionamiento de Tenant <span class="badge badge-tenant">TENANT</span></h2>
+            <div class="path">tenant/02-aprovisionamiento-tenant.svg · tenant/02-aprovisionamiento-tenant.mmd</div>
+            <p class="desc">Flujo completo: desde que llega un nuevo cliente hasta que su tenant está operativo (~15 minutos). Admin Global configura, Tenant Admin opera autónomamente.</p>
+            <img src="tenant/02-aprovisionamiento-tenant.svg" alt="Aprovisionamiento de Tenant">
+        </div>
+
+        <!-- SECCIÓN FLUJOS -->
+        <h2 id="flujos" style="color:#f39c12; border-bottom: 2px solid #f39c12; padding-bottom: 8px;">🔄 Flujos</h2>
+
+        <div class="card">
+            <h2>Flujo de Solicitud Bajo Alta Carga <span class="badge badge-flow">FLUJO</span></h2>
+            <div class="path">flujos/01-flujo-solicitud.svg · flujos/01-flujo-solicitud.mmd</div>
+            <p class="desc">Secuencia temporal: Cliente → Nginx → PHP-FPM → Redis (sesión + caché con posible MISS) → MariaDB (solo si cache miss) → moodledata. Latencia esperada: 150-400ms.</p>
+            <img src="flujos/01-flujo-solicitud.svg" alt="Flujo de Solicitud">
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <p>Documentación en <code>docs/</code> · ADRs en <code>docs/adr/</code> · Diagramas fuente en <code>docs/diagrams/</code></p>
+        <p>Stack: Moodle LMS · PHP 8.3 · Nginx 1.27 · Redis 7 · MariaDB 10.11 · Docker Compose</p>
+    </div>
+</body>
+</html>

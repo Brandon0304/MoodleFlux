@@ -1,0 +1,52 @@
+%% Diagrama de Contenedores C4 - Nivel 2
+%% Despliegue Docker de Moodle LMS
+
+graph TB
+    subgraph Cliente[" "]
+        U[("🌐 Usuario<br/>(Navegador Web)")]
+    end
+
+    subgraph RED["RED INTERNA - Docker Compose Bridge"]
+        style RED fill:#e8f4f8,stroke:#2980b9,stroke-width:2px
+
+        LB["⚖️ Nginx<br/>Reverse Proxy<br/>:443/:80<br/>worker_processes: auto<br/>worker_connections: 4096"]
+        
+        subgraph APP["Capa de Aplicación"]
+            APP1["🐘 PHP-FPM Worker 1<br/>pm.max_children: 50<br/>pm: dynamic"]
+            APP2["🐘 PHP-FPM Worker 2<br/>Escalable vía<br/>--scale php-fpm=N"]
+            APP3["🐘 PHP-FPM Worker N"]
+        end
+
+        subgraph CACHE["Capa de Caché y Estado"]
+            REDIS["⚡ Redis 7<br/>:6379<br/>DB0: Sesiones<br/>DB1-3: Caché<br/>DB4: Locks"]
+        end
+
+        subgraph DB["Capa de Datos"]
+            MARIA["🗄️ MariaDB 10.11<br/>:3306<br/>InnoDB<br/>max_connections: 200"]
+        end
+
+        subgraph STORAGE["Almacenamiento Compartido"]
+            MD["📁 moodledata<br/>(Volumen Docker/NFS)<br/>filedir/ · temp/<br/>trashdir/ · lang/"]
+        end
+    end
+
+    subgraph EXTERNO["Servicios Externos"]
+        MAIL["📧 Mailpit<br/>SMTP: 1025<br/>Web: 8025"]
+    end
+
+    U -- "HTTPS" --> LB
+    LB -- "fastcgi" --> APP1
+    LB -- "fastcgi" --> APP2
+    LB -- "fastcgi" --> APP3
+    APP1 -- "Sesiones/Caché" --> REDIS
+    APP2 -- "Sesiones/Caché" --> REDIS
+    APP3 -- "Sesiones/Caché" --> REDIS
+    APP1 -- "Consultas SQL" --> MARIA
+    APP2 -- "Consultas SQL" --> MARIA
+    APP3 -- "Consultas SQL" --> MARIA
+    APP1 -- "Archivos" --> MD
+    APP2 -- "Archivos" --> MD
+    APP3 -- "Archivos" --> MD
+    APP1 -- "Correos" --> MAIL
+    APP2 -- "Correos" --> MAIL
+    APP3 -- "Correos" --> MAIL

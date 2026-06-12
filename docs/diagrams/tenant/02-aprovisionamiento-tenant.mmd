@@ -1,0 +1,55 @@
+%% Diagrama de Aprovisionamiento de Nuevo Tenant
+%% Flujo paso a paso: Admin Global crea un tenant en Moodle
+
+flowchart TD
+    START(["🏁 Inicio: Nuevo cliente/institución"])
+    START --> S1
+
+    subgraph SETUP["Admin Global - Configuración Inicial"]
+        S1["1️⃣ Crear Categoría Raíz\n📂 /{Nombre del Tenant}/"]
+        S2["2️⃣ Asignar Tema (Theme)\n🎨 boost_{nombre_del_tenant}"]
+        S3["3️⃣ Crear Cohorte\n👥 cohorte_{slug_del_tenant}"]
+        S4["4️⃣ Crear Rol Personalizado\n🔑 manager_{slug} a nivel de categoría"]
+        S5["5️⃣ Crear Usuario Admin del Tenant\n👤 admin@{tenant}.edu"]
+        S6["6️⃣ Asignar Rol al Admin\n🔑 manager_{slug} → admin@{tenant}"]
+        S7["7️⃣ Opcional: Configurar\n🌐 Idioma, formato de fecha,\nzona horaria por tenant"]
+    end
+
+    subgraph DELIVERY["Admin del Tenant - Gestión Autónoma"]
+        T1["📚 Crear cursos dentro\nde su categoría"]
+        T2["👥 Matricular estudiantes\n(asignar al cohorte)"]
+        T3["👨‍🏫 Asignar profesores\n(rol teacher en sus cursos)"]
+        T4["📝 Crear actividades,\nforos, tareas, quizzes"]
+        T5["🎨 Personalizar apariencia\n(logo, colores del theme)"]
+        T6["📊 Generar reportes\nde su tenant"]
+    end
+
+    S1 --> S2
+    S2 --> S3
+    S3 --> S4
+    S4 --> S5
+    S5 --> S6
+    S6 --> S7
+    S7 --> DELIVERY
+
+    T1 --> T2
+    T2 --> T3
+    T3 --> T4
+    T4 --> T5
+    T5 --> T6
+
+    subgraph VERIFICACION["Verificaciones de Aislamiento"]
+        V1["✅ Admin del Tenant NO ve\ncursos de otros tenants"]
+        V2["✅ Estudiantes solo ven\ncursos de su tenant"]
+        V3["✅ Cohorte impide mezcla\nde usuarios entre tenants"]
+        V4["✅ Reportes filtrados\npor categoría raíz"]
+    end
+
+    DELIVERY --> VERIFICACION
+
+    VERIFICACION --> ENDD(["✅ Tenant operativo\nen ~15 minutos"])
+
+    style SETUP fill:#e8f8f5,stroke:#27ae60
+    style DELIVERY fill:#e8f4fd,stroke:#2980b9
+    style VERIFICACION fill:#fef9e7,stroke:#f39c12
+    style ENDD fill:#d5f5e3,stroke:#27ae60,stroke-width:3px
