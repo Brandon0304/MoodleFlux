@@ -86,12 +86,7 @@ jobs:
           globs: |
             docs/**/*.md
             .agents/rules/*.mdc
-          config: |
-            {
-              "MD013": false,
-              "MD033": false,
-              "MD041": false
-            }
+          config: .markdownlint.json
 
   check-links:
     name: Verificar enlaces internos
@@ -107,10 +102,16 @@ jobs:
             while IFS= read -r line; do
               if [[ $line =~ \[ADR-([0-9]{3})\] ]]; then
                 adr_num="${BASH_REMATCH[1]}"
-                adr_file="docs/adr/ADR-${adr_num}-*.md"
-                if ! ls $adr_file 2>/dev/null; then
+                # Buscar el archivo ADR correspondiente
+                found=0
+                for adr_file in docs/adr/ADR-${adr_num}-*.md; do
+                  if [ -f "$adr_file" ]; then
+                    found=1
+                    break
+                  fi
+                done
+                if [ "$found" -eq 0 ]; then
                   echo "❌ $doc referencia ADR-$adr_num pero no existe"
-                  echo "   Buscado: $adr_file"
                   exit 1
                 fi
               fi
@@ -118,13 +119,14 @@ jobs:
           done
           echo "✅ Todas las referencias a ADRs son válidas"
 
-      - name: Verificar referencias a diagramas
+      - name: Verificar referencias a diagramas SVG
         run: |
           echo "=== Verificando referencias a diagramas SVG ==="
+          svg_regex='\[.*\]\(([^)]+\.svg)\)'
           for doc in docs/arquitectura-general.md docs/README.md; do
             if [ -f "$doc" ]; then
               while IFS= read -r line; do
-                if [[ $line =~ \[.*\]\(([^)]+\.svg)\) ]]; then
+                if [[ $line =~ $svg_regex ]]; then
                   svg_path="${BASH_REMATCH[1]}"
                   full_path="docs/$svg_path"
                   if [ ! -f "$full_path" ]; then
