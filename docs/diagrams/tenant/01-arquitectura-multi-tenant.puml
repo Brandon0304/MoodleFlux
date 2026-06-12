@@ -1,0 +1,45 @@
+@startuml
+skinparam componentStyle rectangle
+
+title Arquitectura Multi-Tenant (Lógica) - Moodle LMS
+
+package "Instancia Única Moodle LMS" {
+    usecase "Login Unificado" as LOGIN
+    
+    package "Tenant A: Universidad Nacional" #LightGreen {
+        component "Categoría Raíz\n/Universidad Nacional/" as CAT1
+        component "Curso: Matemáticas" as C11
+        component "Curso: Física" as C12
+        component "Cohorte: cohorte_unacional" as COH1
+        component "Admin: admin@unacional.edu" as ADM1
+        component "Theme: boost_uni" as THM1
+    }
+    
+    package "Tenant B: Empresa Capacitaciones" #LightYellow {
+        component "Categoría Raíz\n/Empresa Capacitaciones/" as CAT2
+        component "Curso: Compliance" as C21
+        component "Curso: Safety Training" as C22
+        component "Cohorte: cohorte_empx" as COH2
+        component "Admin: admin@empx.com" as ADM2
+        component "Theme: boost_corp" as THM2
+    }
+    
+    package "Tenant C: Colegio Secundario" #LightPink {
+        component "Categoría Raíz\n/Colegio Secundario/" as CAT3
+        component "Curso: Historia" as C31
+        component "Curso: Lengua" as C32
+        component "Cohorte: cohorte_colegioy" as COH3
+        component "Admin: admin@colegioy.edu" as ADM3
+        component "Theme: boost_school" as THM3
+    }
+}
+
+actor "Admin Global" as AG
+AG --> CAT1 : Crea
+AG --> CAT2 : Crea
+AG --> CAT3 : Crea
+LOGIN --> T1
+LOGIN --> T2
+LOGIN --> T3
+
+@enduml

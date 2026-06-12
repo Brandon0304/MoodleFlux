@@ -1,0 +1,75 @@
+%% Diagrama de Componentes C4 Nivel 3
+%% Muestra los módulos internos de Moodle y cómo se conectan al stack reactivo
+
+graph TB
+    subgraph MOODLE["MOODLE LMS - Componentes Internos (PHP)"]
+        style MOODLE fill:#f5f0ff,stroke:#6c5ce7,stroke-width:2px
+
+        subgraph AUTHCAPA["Autenticación y Seguridad"]
+            AUTH["🔐 Authentication\n(Login, SSO,\nMFA)"]
+            SESS["💾 Session Handler\n(Redis DB0)"]
+            ROLES["👥 Roles & Permissions\n(RBAC por categoría)"]
+        end
+
+        subgraph CORE["Core de Moodle"]
+            COURSE["📚 Course Management\n(Categorías, cursos,\nsecciones)"]
+            ENROL["📝 Enrollment\n(Matriculaciones,\ncohortes)"]
+            GRADES["📊 Gradebook\n(Calificaciones,\nreportes)"]
+            ACTIVITY["⚙️ Activities\n(Foros, tareas,\nquizzes, etc.)"]
+        end
+
+        subgraph CACHEFILE["Caché y Archivos"]
+            CACHE["⚡ Cache API\n(Redis DB1-3)"]
+            FILESTORE["📁 File System\n(moodledata/shared)"]
+            LOCALTMP["🗂️ Local Cache\n(/tmp/moodle_localcache)\n(Solo este worker)"]
+            LOCK["🔒 Lock Factory\n(Redis DB4)"]
+        end
+
+        subgraph ASYNC["Tareas Asíncronas"]
+            CRON["⏰ Cron / Task Manager\n(Ad-hoc + scheduled)"]
+            QUEUE["📨 Message Queue\n(Future: RabbitMQ)"]
+        end
+    end
+
+    subgraph EXTERNAL["Servicios Externos - Stack Reactivo"]
+        style EXTERNAL fill:#e8f8f5,stroke:#27ae60
+        REDIS["⚡ Redis 7\n:6379"]
+        MARIA["🗄️ MariaDB 10.11\n:3306"]
+        MDATA["📁 moodledata\n(Volumen Compartido)"]
+        NGINX["⚖️ Nginx\n:443/:80"]
+        MAIL["📧 Mailpit\nSMTP:1025 / Web:8025"]
+    end
+
+    %% Conexiones entre componentes internos
+    SESS -. "Config: session_handler_class" .-> REDIS
+    CACHE -. "Config: cache_store_redis" .-> REDIS
+    LOCK -. "Config: lock_factory" .-> REDIS
+    FILESTORE -. "Config: dataroot" .-> MDATA
+    LOCALTMP -. "Config: localcachedir" .-> MDATA
+    COURSE -. "SQL queries" .-> MARIA
+    ENROL -. "SQL queries" .-> MARIA
+    GRADES -. "SQL queries" .-> MARIA
+    ACTIVITY -. "SQL queries" .-> MARIA
+    AUTH -. "SQL queries" .-> MARIA
+    AUTH -. "Validate" .-> NGINX
+    CRON -. "Async tasks" .-> QUEUE
+
+    %% Conexiones externas
+    COURSE -.-> CACHE
+    ACTIVITY -.-> FILESTORE
+    GRADES -.-> CACHE
+
+    %% Leyenda de configuraciones clave
+    subgraph LEYENDA_CONFIG["Configuraciones Reactivas en config.php"]
+        style LEYENDA_CONFIG fill:#fafafa,stroke:#ccc
+        L1["📌 $CFG->session_handler_class = '\\core\\session\\redis';"]
+        L2["📌 $CFG->session_redis_host = 'redis';"]
+        L3["📌 $CFG->cache_types['redis'] = {...};"]
+        L4["📌 $CFG->lock_factory = '\\core\\lock\\redis_lock_factory';"]
+        L5["📌 $CFG->dataroot = '/var/www/moodledata';"]
+        L6["📌 $CFG->localcachedir = '/tmp/moodle_localcache';"]
+    end
+
+    SESS -.-> L1
+    CACHE -.-> L3
+    LOCK -.-> L4

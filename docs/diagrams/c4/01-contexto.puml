@@ -1,0 +1,26 @@
+@startuml
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Contexto - Moodle LMS Reactivo Multi-Tenant
+
+Person(estudiante, "Estudiante", "Consume cursos y realiza actividades")
+Person(profesor, "Profesor", "Crea y gestiona contenido educativo")
+Person(admin_global, "Admin Global", "Super administrador del sistema")
+Person(tenant_admin, "Tenant Admin", "Administrador delegado de una institución")
+
+System(moodle, "Moodle LMS", "Sistema de Gestión de Aprendizaje\nReactivo · Multi-Tenant · Escalable")
+
+System_Ext(mailpit, "Mailpit", "SMTP de prueba")
+System_Ext(ldap, "LDAP", "Autenticación externa (opcional)")
+
+Rel(estudiante, moodle, "HTTPS", "443")
+Rel(profesor, moodle, "HTTPS", "443")
+Rel(admin_global, moodle, "HTTPS", "443")
+Rel(tenant_admin, moodle, "HTTPS", "443")
+Rel(moodle, mailpit, "Envía correos", "SMTP")
+Rel(moodle, ldap, "Autentica contra", "LDAP")
+
+@enduml

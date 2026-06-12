@@ -1,0 +1,66 @@
+%% Diagrama de Resiliencia / Máquina de Estados
+%% Convertido a flowchart para compatibilidad Mermaid
+
+flowchart TD
+    START([Estado Normal]) --> NORMAL{¿Todos los servicios OK?}
+    NORMAL -->|Sí| SERVING[Sistema atendiendo solicitudes normalmente]
+
+    %% Redis Failure
+    NORMAL -->|Redis timeout| REDIS_FAIL[Redis Fail]
+    REDIS_FAIL --> SESS_FALLBACK[Sesiones a archivos locales]
+    SESS_FALLBACK --> CACHE_FALLBACK[Caché a moodledata]
+    CACHE_FALLBACK --> LOCK_FALLBACK[Locks a archivos locales]
+    LOCK_FALLBACK --> DEGRADED[🟡 MODO DEGRADADO]
+    DEGRADED --> REDIS_CHECK[Health check cada 10s]
+    REDIS_CHECK -->|Redis responde| REDIS_RESTORE[Restaurar Redis]
+    REDIS_RESTORE --> NORMAL
+    REDIS_CHECK -->|Sigue caído| DEGRADED
+
+    %% DB Failure
+    NORMAL -->|MariaDB timeout| DB_FAIL[DB Fail]
+    DB_FAIL --> DB_TIMEOUT[Query timeout 120s]
+    DB_TIMEOUT --> DB_RETRY[Reintento x3]
+    DB_RETRY -->|Éxito| DB_RECOVER[Restaurar conexión]
+    DB_RECOVER --> NORMAL
+    DB_RETRY -->|Fracaso| DB_503[Nginx HTTP 503]
+    DB_503 --> DB_CHECK[Health check cada 5s]
+    DB_CHECK -->|DB responde| DB_RETRY
+    DB_CHECK -->|Sigue caída| DB_503
+
+    %% Worker Saturation
+    NORMAL -->|Pico de tráfico| WORKER_SAT[Worker Saturation]
+    WORKER_SAT --> NGINX_QUEUE[Nginx encola request]
+    NGINX_QUEUE --> WAIT_WORKER[Espera worker libre]
+    WAIT_WORKER -->|Worker libre| SERVED[Request servido con latencia]
+    SERVED --> NORMAL
+    WAIT_WORKER -->|Timeout 120s| NGINX_502[Nginx HTTP 502]
+    NGINX_502 --> NORMAL
+
+    %% Disk Full
+    NORMAL -->|Disco lleno| DISK_FULL[Disk Full]
+    DISK_FULL --> READONLY[Modo solo lectura]
+    READONLY --> WRITE_FAIL[Escrituras fallan]
+    WRITE_FAIL --> ALERT[Alerta a admin]
+    ALERT --> FIX_SPACE[Admin libera espacio]
+    FIX_SPACE --> NORMAL
+
+    %% Styles
+    style NORMAL fill:#d5f5e3,stroke:#27ae60,stroke-width:3px
+    style DEGRADED fill:#fef9e7,stroke:#f39c12
+    style REDIS_FAIL fill:#fadbd8,stroke:#e74c3c
+    style DB_FAIL fill:#fadbd8,stroke:#e74c3c
+    style DB_503 fill:#fadbd8,stroke:#e74c3c
+    style NGINX_502 fill:#fadbd8,stroke:#e74c3c
+    style DISK_FULL fill:#fadbd8,stroke:#e74c3c
+    style READONLY fill:#fadbd8,stroke:#e74c3c
+    style ALERT fill:#fef9e7,stroke:#f39c12
+
+    subgraph LEGEND["Leyenda"]
+        L1["🟢 Estado normal (todo OK)"]
+        L2["🟡 Estado degradado (funcional pero limitado)"]
+        L3["🔴 Estado de fallo (requiere intervención o restart automático)"]
+    end
+
+    L1 -.-> NORMAL
+    L2 -.-> DEGRADED
+    L3 -.-> REDIS_FAIL

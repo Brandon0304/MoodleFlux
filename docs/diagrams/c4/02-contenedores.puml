@@ -1,0 +1,28 @@
+@startuml
+!include <C4/C4_Container>
+!include <C4/C4_Context>
+
+LAYOUT_WITH_LEGEND()
+
+title Diagrama de Contenedores - Moodle LMS Reactivo
+
+Person(user, "Usuario", "Navegador Web")
+
+System_Boundary(moodle, "Moodle LMS Docker") {
+    Container(nginx, "Nginx", "Reverse Proxy", "worker_processes: auto\nworker_connections: 4096")
+    Container(php_fpm, "PHP-FPM", "Workers de aplicación", "pm.max_children: 50\npm: dynamic")
+    ContainerDb(redis, "Redis", "Caché y Sesiones", "DB0: Sesiones\nDB1-3: Caché\nDB4: Locks")
+    ContainerDb(mariadb, "MariaDB", "Base de Datos", "InnoDB\nmax_connections: 200")
+    Container(moodledata, "moodledata", "Almacenamiento", "Volumen Docker/NFS\nfiledir/ · temp/ · trashdir/")
+}
+
+System_Ext(mailpit, "Mailpit", "SMTP de prueba")
+
+Rel(user, nginx, "HTTPS", "443")
+Rel(nginx, php_fpm, "fastcgi")
+Rel(php_fpm, redis, "Sesiones/Caché/Locks")
+Rel(php_fpm, mariadb, "Consultas SQL")
+Rel(php_fpm, moodledata, "Archivos")
+Rel(php_fpm, mailpit, "Correos")
+
+@enduml
