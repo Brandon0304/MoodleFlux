@@ -1,0 +1,73 @@
+---
+description: Estándares de documentación, ADRs y diagramas
+globs: *
+---
+# Estándares de Documentación
+
+## Formato de ADRs (Architecture Decision Records)
+
+Cada ADR en `docs/adr/` DEBE seguir esta plantilla exacta:
+
+```markdown
+# ADR-NNN: [Título descriptivo en español]
+
+## Estado
+[Propuesto | Aceptado | Deprecated | Reemplazado por ADR-NNN]
+
+## Contexto
+[Qué situación motiva la decisión, restricciones, y por qué es necesaria]
+
+## Opciones consideradas
+### Opción A: [Nombre]
+- Pros: ...
+- Contras: ...
+
+### Opción B: [Nombre]
+- Pros: ...
+- Contras: ...
+
+## Decisión
+[Qué se eligió y por qué, con evidencia]
+
+## Consecuencias
+[Positivas y negativas de la decisión]
+
+## Referencias
+[Enlaces a documentación oficial, benchmarks, ADRs relacionados]
+```
+
+### Reglas para ADRs
+- Numeración secuencial: ADR-001, ADR-002, etc.
+- Naming: `ADR-NNN-titulo-en-espanol.md` (sin espacios, lowercase)
+- Estado inicial siempre "Propuesto", cambiar a "Aceptado" cuando se confirma
+- Si un ADR reemplaza a otro, el viejo pasa a "Deprecated" y el nuevo lo referencia
+
+## Estándares de Diagramas
+
+### Ubicación
+- Todos los diagramas en `docs/diagrams/`
+- Organizados por subdirectorio temático: `c4/`, `infra/`, `tenant/`, `flujos/`
+- Prefijo numérico de 2 dígitos para orden: `01-`, `02-`, `03-`
+
+### Formatos
+- **SVG**: Formato de publicación (renderizado final)
+- **MMD**: Fuente editable (Mermaid.js)
+- **PUML**: Fuente editable (PlantUML) — solo cuando aplique
+
+### Reglas de Diagramas
+- Usar español para etiquetas y descripciones
+- Términos técnicos pueden ir en inglés (Redis, Nginx, cache, session)
+- Incluir leyenda cuando el diagrama tenga códigos de color
+- Mantener consistencia visual dentro de cada categoría
+
+## Documentación General
+- Toda la documentación se escribe en español
+- Archivos Markdown (.md) con sintaxis estándar
+- Un archivo `README.md` por directorio como índice
+- Las referencias a ADRs se hacen como [ADR-001](./adr/ADR-001-titulo.md)
+- Las referencias a diagramas se hacen como `c4/01-contexto.svg`
+
+## Archivos que NO se deben modificar
+- `docs/adr/` → Solo el arquitecto crea/modifica ADRs
+- `docs/diagrams/` → Solo el arquitecto crea/organiza diagramas
+- `.agents/rules/` → Solo para reglas del agente
