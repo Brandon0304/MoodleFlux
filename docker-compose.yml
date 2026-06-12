@@ -1,0 +1,203 @@
+# =============================================================================
+# MoodleFlux - Docker Compose
+# Stack: Nginx + PHP-FPM + Redis + MariaDB + Mailpit
+# Basado en: ADR-001, ADR-002, ADR-005, ADR-006, ADR-007
+# =============================================================================
+
+name: ${COMPOSE_PROJECT_NAME:-moodleflux}
+
+services:
+  # ===========================================================================
+  # Nginx - Reverse proxy / Load balancer
+  # ===========================================================================
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: moodleflux-nginx
+    ports:
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      php-fpm:
+        condition: service_started
+    networks:
+      - frontend_net
+      - backend_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    mem_limit: 128m
+    mem_reservation: 64m
+    environment:
+      TZ: ${TZ:-America/Bogota}
+
+  # ===========================================================================
+  # PHP-FPM - Application server con Moodle
+  # ===========================================================================
+  php-fpm:
+    build:
+      context: ./docker/php-fpm
+    container_name: moodleflux-php-fpm
+    volumes:
+      - moodledata:/var/www/moodledata
+      - ./docker/moodle/config.php.tpl:/var/www/html/config.php.tpl:ro
+    environment:
+      MOODLE_DB_HOST: mariadb
+      MOODLE_DB_NAME: ${MOODLE_DB_NAME:-moodle}
+      MOODLE_DB_USER: ${MOODLE_DB_USER:-moodle}
+      MOODLE_DB_PASS: ${MOODLE_DB_PASS:?Must set MOODLE_DB_PASS}
+      MOODLE_ADMIN_USER: ${MOODLE_ADMIN_USER:-admin}
+      MOODLE_ADMIN_PASS: ${MOODLE_ADMIN_PASS:?Must set MOODLE_ADMIN_PASS}
+      MOODLE_SITE_NAME: ${MOODLE_SITE_NAME:-MoodleFlux PoC}
+      MOODLE_LANG: ${MOODLE_LANG:-es}
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT:-https://localhost}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-256M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
+      PHP_MAX_CHILDREN: ${PHP_MAX_CHILDREN:-10}
+      PHP_START_SERVERS: ${PHP_START_SERVERS:-2}
+      PHP_MIN_SPARE_SERVERS: ${PHP_MIN_SPARE_SERVERS:-1}
+      PHP_MAX_SPARE_SERVERS: ${PHP_MAX_SPARE_SERVERS:-3}
+      TZ: ${TZ:-America/Bogota}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo 'PHP OK';"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    mem_limit: 512m
+    mem_reservation: 256m
+
+  # ===========================================================================
+  # Redis - Sesiones, caché y lock factory
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: moodleflux-redis
+    command:
+      - redis-server
+      - --appendonly yes
+      - --appendfsync everysec
+      - --save 900 1
+      - --save 300 10
+      - --save 60 10000
+      - --maxmemory 256mb
+      - --maxmemory-policy allkeys-lru
+      - --timeout 300
+      - --tcp-keepalive 60
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+    mem_limit: 256m
+    mem_reservation: 128m
+    environment:
+      TZ: ${TZ:-America/Bogota}
+
+  # ===========================================================================
+  # MariaDB - Base de datos principal
+  # ===========================================================================
+  mariadb:
+    image: mariadb:10.11
+    container_name: moodleflux-mariadb
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./docker/mariadb/my.cnf:/etc/mysql/conf.d/moodle.cnf:ro
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Must set MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MOODLE_DB_NAME:-moodle}
+      MYSQL_USER: ${MOODLE_DB_USER:-moodle}
+      MYSQL_PASSWORD: ${MOODLE_DB_PASS:?Must set MOODLE_DB_PASS}
+      TZ: ${TZ:-America/Bogota}
+    networks:
+      - backend_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    mem_limit: 1g
+    mem_reservation: 512m
+
+  # ===========================================================================
+  # Mailpit - SMTP de prueba (captura correos de Moodle)
+  # ===========================================================================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: moodleflux-mailpit
+    ports:
+      - "8025:8025"
+    networks:
+      - backend_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8025/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+    mem_limit: 128m
+    mem_reservation: 64m
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  mariadb-data:
+    driver: local
+  redis-data:
+    driver: local
+  moodledata:
+    driver: local

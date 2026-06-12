@@ -48,7 +48,7 @@ jobs:
           expected=1
           for file in $(ls docs/adr/*.md | sort); do
             basename=$(basename "$file")
-            num=$(echo "$basename" | grep -oP '\d{3}' | sed 's/^0*//')
+            num=$(echo "$basename" | grep -oE '[0-9]{3}' | sed 's/^0*//')
             if [ "$num" -ne "$expected" ]; then
               echo "❌ Salto en numeración: se esperaba $expected, se encontró $num en $basename"
               exit 1
@@ -82,12 +82,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          globs: |
-            docs/**/*.md
-            .agents/rules/*.mdc
-          config: .markdownlint.json
+        run: |
+          npx --yes markdownlint-cli2 "docs/**/*.md" ".agents/rules/*.mdc"
 
   check-links:
     name: Verificar enlaces internos
