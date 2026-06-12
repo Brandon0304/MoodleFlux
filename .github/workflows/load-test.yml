@@ -1,8 +1,8 @@
-# =============================================================================
+# [FORCE RE-INDEX] =============================================================================
 # Workflow: Pruebas de Carga
 # Propósito: Ejecutar pruebas de carga con k6 sobre la instancia de Moodle
 #            Solo ejecución manual desde GitHub UI
-# =============================================================================
+# [FORCE RE-INDEX] =============================================================================
 
 name: Pruebas de Carga
 
