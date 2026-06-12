@@ -1,15 +1,12 @@
 # =============================================================================
 # Workflow: Pruebas de Carga
 # Propósito: Ejecutar pruebas de carga con k6 sobre la instancia de Moodle
-#            Solo ejecución manual o programada (no en push)
+#            Solo ejecución manual desde GitHub UI
 # =============================================================================
 
 name: Pruebas de Carga
 
 on:
-  schedule:
-    # Ejecutar cada sábado a las 4:00 AM (entorno de pruebas)
-    - cron: '0 4 * * 6'
   workflow_dispatch:
     inputs:
       target_url:
@@ -97,7 +94,7 @@ K6EOF
             -e TARGET_URL=${{ github.event.inputs.target_url || 'https://localhost' }} \
             -e VUS=${{ github.event.inputs.virtual_users || '50' }} \
             k6-test.js
-        continue-on-error: true  # No fallar el workflow si hay errores de carga
+        continue-on-error: true
 
       - name: Publicar resultados como artifact
         uses: actions/upload-artifact@v4
