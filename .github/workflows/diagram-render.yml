@@ -1,0 +1,110 @@
+# =============================================================================
+# Workflow: Renderizado de Diagramas
+# Propósito: Renderizar automáticamente diagramas Mermaid a SVG cuando se
+#            modifican los archivos fuente (.mmd)
+# =============================================================================
+
+name: Renderizar Diagramas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/diagrams/**/*.mmd'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/diagrams/**/*.mmd'
+  workflow_dispatch:
+    # Permitir renderizado manual
+
+jobs:
+  render-mermaid:
+    name: Renderizar Mermaid a SVG
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Mermaid CLI
+        run: |
+          npm install -g @mermaid-js/mermaid-cli
+
+      - name: Renderizar diagramas Mermaid modificados
+        run: |
+          # Obtener lista de archivos .mmd modificados
+          if [ "${{ github.event_name }}" == "push" ]; then
+            changed_files=$(git diff --name-only HEAD~1 -- '*.mmd')
+          else
+            changed_files=$(git diff --name-only origin/main -- '*.mmd')
+          fi
+
+          if [ -z "$changed_files" ]; then
+            echo "No hay archivos .mmd modificados"
+            exit 0
+          fi
+
+          for mmd_file in $changed_files; do
+            if [ -f "$mmd_file" ]; then
+              svg_file="${mmd_file%.mmd}.svg"
+              echo "Renderizando: $mmd_file → $svg_file"
+              mkdir -p "$(dirname "$svg_file")"
+              npx -y @mermaid-js/mermaid-cli \
+                -i "$mmd_file" \
+                -o "$svg_file" \
+                -b transparent \
+                --width 1400
+              echo "✅ $svg_file generado"
+            fi
+          done
+
+      - name: Verificar cambios
+        run: |
+          if [ -n "$(git status --porcelain '*.svg')" ]; then
+            echo "Hay diagramas nuevos por commitear:"
+            git status --porcelain '*.svg'
+          else
+            echo "No hay cambios en diagramas"
+          fi
+
+  validate-svgs:
+    name: Validar archivos SVG
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que todos los .mmd tienen su .svg correspondiente
+        run: |
+          errors=0
+          while IFS= read -r mmd_file; do
+            svg_file="${mmd_file%.mmd}.svg"
+            if [ ! -f "$svg_file" ]; then
+              echo "❌ $mmd_file no tiene SVG correspondiente"
+              errors=$((errors + 1))
+            fi
+          done < <(find docs/diagrams -name "*.mmd" -not -path "./.git/*")
+
+          if [ "$errors" -gt 0 ]; then
+            echo "Se encontraron $errors diagramas sin renderizar"
+            echo "Ejecutar: npx @mermaid-js/mermaid-cli -i archivo.mmd -o archivo.svg"
+            exit 1
+          fi
+          echo "✅ Todos los diagramas .mmd tienen su .svg"
+
+      - name: Verificar que los SVGs no están corruptos
+        run: |
+          for svg in docs/diagrams/**/*.svg; do
+            if [ -f "$svg" ]; then
+              if ! head -1 "$svg" | grep -q '<svg'; then
+                echo "❌ $svg parece corrupto (no comienza con <svg>)"
+                exit 1
+              fi
+            fi
+          done
+          echo "✅ Todos los SVGs son válidos"
